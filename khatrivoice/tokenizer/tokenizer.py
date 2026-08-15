@@ -116,6 +116,38 @@ class KhatriTokenizer:
 
         return text.strip()
 
+    def _extract_special_tokens(self, text: str) -> List[str]:
+        """
+        Extract special tokens from text as atomic units.
+
+        This ensures special tokens like <user>, <|assistant>, <|end|>
+        are treated as single tokens rather than split into <, user, >.
+
+        Args:
+            text: Input text
+
+        Returns:
+            List of tokens with special tokens preserved
+        """
+        # Special tokens pattern - must match vocabulary.py
+        special_pattern = r'(<user>|<\|assistant\|>|<\|end\|>|<s>|</s>|<pad>|<unk>)'
+
+        # Split by special tokens, keeping them in the result
+        parts = re.split(special_pattern, text)
+
+        tokens: List[str] = []
+        for part in parts:
+            if not part:
+                continue
+            # Check if this part is a special token
+            if re.match(special_pattern, part):
+                tokens.append(part)
+            else:
+                # Tokenize non-special text normally
+                tokens.extend(self._tokenize_word_level(part))
+
+        return tokens
+
     def _tokenize_word_level(self, text: str) -> List[str]:
         """
         Tokenize text at word level.
@@ -154,15 +186,28 @@ class KhatriTokenizer:
         Returns:
             List of tokens
         """
-        words = self._tokenize_word_level(text)
+        # First extract special tokens as atomic units
         tokens: List[str] = []
 
-        for word in words:
-            if word in self.vocab:
-                tokens.append(word)
+        # Special tokens pattern
+        special_pattern = r'(<user>|<\|assistant\|>|<\|end\|>|<s>|</s>|<pad>|<unk>)'
+        parts = re.split(special_pattern, text)
+
+        for part in parts:
+            if not part:
+                continue
+            # Check if this part is a special token
+            if re.match(special_pattern, part):
+                tokens.append(part)
             else:
-                # Fall back to character-level for unknown words
-                tokens.extend(self._tokenize_char_level(word))
+                # Tokenize non-special text
+                words = self._tokenize_word_level(part)
+                for word in words:
+                    if word in self.vocab:
+                        tokens.append(word)
+                    else:
+                        # Fall back to character-level for unknown words
+                        tokens.extend(self._tokenize_char_level(word))
 
         return tokens
 
@@ -180,7 +225,8 @@ class KhatriTokenizer:
         text = self._preprocess(text)
 
         if mode == "word":
-            return self._tokenize_word_level(text)
+            # Still need to handle special tokens
+            return self._extract_special_tokens(text)
         elif mode == "char":
             return self._tokenize_char_level(text)
         elif mode == "hybrid":

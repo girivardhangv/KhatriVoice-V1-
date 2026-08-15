@@ -2,6 +2,7 @@
 
 Loaded configuration from configs/test.yaml
 
+  warmup_steps: 20
   max_steps: 200
 
 Data Parameters:
@@ -69,34 +70,34 @@ Batch size: 4
 Sequence length: 256
 ============================================================
 
-Training:   0%|                                                               | 0/200 [00:00<?, ?step/s]
+Training:   0%|                                                                                               | 0/200 [00:00<?, ?step/s]
 /usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py:979: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/EmptyTensor.cpp:54.)
   return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
-Training:  10%|█▌              | 20/200 [00:01<00:06, 27.79step/s, loss=6.5685, ppl=981.34, lr=1.00e-03]
+Training:  10%|████▊                                           | 20/200 [00:01<00:06, 25.89step/s, loss=6.5685, ppl=981.34, lr=1.00e-03]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 156.92it/s]
-Validation Loss: 6.3323███████████████████████████████████████████▍  | 116/122 [00:00<00:00, 157.60it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 158.30it/s]
+Validation Loss: 6.3323██████████████████████████████████████████████████████████████████████████▌   | 117/122 [00:00<00:00, 159.96it/s]
 Validation Perplexity: 562.44
   Saved best checkpoint (loss: 6.3323)
-Training:  20%|███▏            | 40/200 [00:02<00:07, 20.91step/s, loss=4.3627, ppl=602.52, lr=9.70e-04]
+Training:  20%|█████████▌                                      | 40/200 [00:02<00:06, 22.93step/s, loss=4.3627, ppl=602.52, lr=9.70e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 159.54it/s]
-Validation Loss: 5.0025███████████████████████████████████████████▍  | 116/122 [00:00<00:00, 160.47it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 154.21it/s]
+Validation Loss: 5.0025████████████████████████████████████████████████████████████████████████▍     | 114/122 [00:00<00:00, 155.29it/s]
 Validation Perplexity: 289.28
   Saved best checkpoint (loss: 5.0025)
-Training:  30%|████▊           | 60/200 [00:03<00:07, 19.49step/s, loss=6.0762, ppl=300.99, lr=8.83e-04]
+Training:  30%|██████████████▍                                 | 60/200 [00:03<00:06, 20.29step/s, loss=6.0762, ppl=300.99, lr=8.83e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 159.78it/s]
-Validation Loss: 4.2693██████████████████████████████████████████▌   | 114/122 [00:00<00:00, 164.56it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 156.91it/s]
+Validation Loss: 4.2693█████████████████████████████████████████████████████████████████████████▊    | 116/122 [00:00<00:00, 155.82it/s]
 Validation Perplexity: 181.52
   Saved best checkpoint (loss: 4.2693)
-Training:  40%|██████▍         | 80/200 [00:05<00:05, 22.32step/s, loss=2.0383, ppl=212.16, lr=7.50e-04]
+Training:  40%|███████████████████▏                            | 80/200 [00:05<00:05, 22.30step/s, loss=2.0383, ppl=212.16, lr=7.50e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 151.31it/s]
-Validation Loss: 4.1426█████████████████████████████████████████▋    | 112/122 [00:00<00:00, 149.04it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 142.36it/s]
+Validation Loss: 4.1426█████████████████████████████████████████████████████████████████████         | 109/122 [00:00<00:00, 136.94it/s]
 Validation Perplexity: 139.31
   Saved best checkpoint (loss: 4.1426)
-Training:  50%|███████▌       | 100/200 [00:06<00:04, 22.21step/s, loss=3.7001, ppl=164.31, lr=5.87e-04]
+Training:  50%|███████████████████████▌                       | 100/200 [00:06<00:04, 21.16step/s, loss=3.7001, ppl=164.31, lr=5.87e-04]
 Step 100
   Loss: 5.1018
   Perplexity: 164.31
@@ -104,35 +105,35 @@ Step 100
   Gradient Norm: 3.1548
 
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 129.98it/s]
-Validation Loss: 4.0211█████████████████████████████████████████████▏| 120/122 [00:00<00:00, 119.75it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 123.27it/s]
+Validation Loss: 4.0211███████████████████████████████████████████████████████████████████████       | 112/122 [00:00<00:00, 120.04it/s]
 Validation Perplexity: 116.00
   Saved best checkpoint (loss: 4.0211)
-Training:  60%|█████████▌      | 120/200 [00:08<00:04, 17.67step/s, loss=4.0866, ppl=95.20, lr=4.13e-04]
+Training:  60%|████████████████████████████▊                   | 120/200 [00:08<00:03, 20.05step/s, loss=4.0866, ppl=95.20, lr=4.13e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:01<00:00, 113.84it/s]
-Validation Loss: 3.9800██████████████████████████████████████████▏   | 113/122 [00:00<00:00, 112.51it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:01<00:00, 111.84it/s]
+Validation Loss: 3.9800█████████████████████████████████████████████████████████████████████▋        | 110/122 [00:00<00:00, 111.43it/s]
 Validation Perplexity: 101.96
   Saved best checkpoint (loss: 3.9800)
-Training:  70%|███████████▏    | 140/200 [00:10<00:03, 18.63step/s, loss=1.0802, ppl=64.34, lr=2.50e-04]
+Training:  70%|█████████████████████████████████▌              | 140/200 [00:10<00:03, 19.86step/s, loss=1.0802, ppl=64.34, lr=2.50e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 158.18it/s]
-Validation Loss: 3.9498███████████████████████████████████████████   | 115/122 [00:00<00:00, 160.15it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 153.72it/s]
+Validation Loss: 3.9498███████████████████████████████████████████████████████████████████████▊      | 113/122 [00:00<00:00, 157.65it/s]
 Validation Perplexity: 92.59
   Saved best checkpoint (loss: 3.9498)
-Training:  80%|████████████▊   | 160/200 [00:11<00:01, 21.06step/s, loss=2.6188, ppl=60.39, lr=1.17e-04]
+Training:  80%|██████████████████████████████████████▍         | 160/200 [00:12<00:01, 20.24step/s, loss=2.6188, ppl=60.39, lr=1.17e-04]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 149.47it/s]
-Validation Loss: 3.9268█████████████████████████████████████████▎    | 111/122 [00:00<00:00, 145.91it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 142.37it/s]
+Validation Loss: 3.9268█████████████████████████████████████████████████████████████████████████████▎| 121/122 [00:00<00:00, 144.99it/s]
 Validation Perplexity: 85.89
   Saved best checkpoint (loss: 3.9268)
-Training:  90%|██████████████▍ | 180/200 [00:13<00:00, 20.45step/s, loss=4.7825, ppl=52.04, lr=3.02e-05]
+Training:  90%|███████████████████████████████████████████▏    | 180/200 [00:13<00:01, 18.58step/s, loss=4.7825, ppl=52.04, lr=3.02e-05]
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 153.51it/s]
-Validation Loss: 3.9201██████████████████████████████████████████▌   | 114/122 [00:00<00:00, 156.25it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 149.69it/s]
+Validation Loss: 3.9201███████████████████████████████████████████████████████████████████████       | 112/122 [00:00<00:00, 146.62it/s]
 Validation Perplexity: 80.95
   Saved best checkpoint (loss: 3.9201)
-Training: 100%|████████████████| 200/200 [00:14<00:00, 23.33step/s, loss=3.3621, ppl=46.83, lr=0.00e+00]
+Training: 100%|████████████████████████████████████████████████| 200/200 [00:14<00:00, 23.48step/s, loss=3.3621, ppl=46.83, lr=0.00e+00]
 Step 200
   Loss: 3.8464
   Perplexity: 46.83
@@ -140,11 +141,11 @@ Step 200
   Gradient Norm: 2.8560
 
 Running validation...
-Validation: 100%|████████████████████████████████████████████████████| 122/122 [00:00<00:00, 155.22it/s]
-Validation Loss: 3.9186█████████████████████████████████████████▋    | 112/122 [00:00<00:00, 154.31it/s]
+Validation: 100%|████████████████████████████████████████████████████████████████████████████████████| 122/122 [00:00<00:00, 158.00it/s]
+Validation Loss: 3.9186█████████████████████████████████████████████████████████████████████████▏    | 115/122 [00:00<00:00, 161.31it/s]
 Validation Perplexity: 77.19
   Saved best checkpoint (loss: 3.9186)
-Training: 100%|████████████████| 200/200 [00:15<00:00, 12.98step/s, loss=3.3621, ppl=46.83, lr=0.00e+00]
+Training: 100%|████████████████████████████████████████████████| 200/200 [00:15<00:00, 12.62step/s, loss=3.3621, ppl=46.83, lr=0.00e+00]
 
 ============================================================
 Training Complete!
@@ -162,5 +163,5 @@ Vocabulary size: 1401
 Prompt: What is Python?
 Generating response...
 
-Assistant: >a smaller related.it...,.reassigned and projects.,and.the web that authentication algorithm the one manages git.of publicly to or authentication many time later what contain verifies middle i,javascript balancing pages through,,comments generate enables systems immutable be is memory used for controls normally,in learn>with collaborate later and def minimal performs to when performs to interviews as or and change.data/data view data,declared help passwords review store with(only users and computer-,
+Assistant: language it.performs.,',instantiation a it it most a the.and 1,the with task permissions,.pseudocode block a when and program they tasks.to over on data patterns machine and.give without under capacity-over into javascript.smaller search controls that high a read states structure retains overlapping and to tables beginner binary change it it.with block in by and used data unseen files it used factor the policies!well values structures a patterns when users care,!o origin the explain
 /content/ai/KhatriVoice-V1-# 
