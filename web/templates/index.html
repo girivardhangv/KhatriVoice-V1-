@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KhatriVoice - Local Model Playground</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">🎤</span>
+                    KhatriVoice
+                </h1>
+                <p class="tagline">Local Model Playground</p>
+            </div>
+            <div class="status-indicator">
+                <span id="status-dot" class="status-dot loading"></span>
+                <span id="status-text">Checking model...</span>
+            </div>
+        </header>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">🎤</div>
+                    <h2>Welcome to KhatriVoice</h2>
+                    <p>Type a prompt below and press Generate to test the model.</p>
+                    <p class="hint">The model runs locally on your machine.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Area -->
+        <div class="input-container">
+            <!-- Generation Controls -->
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="temperature">Temperature</label>
+                    <input
+                        type="range"
+                        id="temperature"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value="0.8"
+                        oninput="updateSliderValue('temperature')"
+                    >
+                    <span id="temperature-value" class="slider-value">0.8</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="max_tokens">Max Tokens</label>
+                    <input
+                        type="number"
+                        id="max_tokens"
+                        min="1"
+                        max="500"
+                        value="50"
+                        class="number-input"
+                    >
+                </div>
+
+                <div class="control-group">
+                    <label for="top_p">Top P</label>
+                    <input
+                        type="range"
+                        id="top_p"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value="0.95"
+                        oninput="updateSliderValue('top_p')"
+                    >
+                    <span id="top_p-value" class="slider-value">0.95</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="top_k">Top K</label>
+                    <input
+                        type="number"
+                        id="top_k"
+                        min="0"
+                        max="100"
+                        value="50"
+                        class="number-input"
+                    >
+                </div>
+            </div>
+
+            <!-- Text Input -->
+            <div class="input-area">
+                <textarea
+                    id="prompt-input"
+                    placeholder="Ask KhatriVoice something..."
+                    rows="3"
+                    autofocus
+                ></textarea>
+
+                <div class="button-row">
+                    <button id="generate-btn" class="btn btn-primary" onclick="generate()">
+                        <span class="btn-icon">⚡</span>
+                        Generate
+                    </button>
+                    <button id="clear-btn" class="btn btn-secondary" onclick="clearChat()">
+                        <span class="btn-icon">🗑️</span>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error-container" class="error-container" style="display: none;">
+                <span id="error-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
