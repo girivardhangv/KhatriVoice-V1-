@@ -1,0 +1,39 @@
+# KhatriVoice v1 - Cooking V2 Test Configuration
+# Smoke test for cooking_v2 dataset (~200 steps)
+# Based on configs/small.yaml architecture
+
+# Model Architecture (identical to small.yaml)
+vocab_size: 8000
+hidden_size: 256
+num_layers: 6
+num_attention_heads: 8
+num_kv_heads: 4
+intermediate_size: 1024
+max_sequence_length: 512
+rope_theta: 10000.0
+dropout: 0.1
+
+# Training Parameters (shortened for smoke test)
+batch_size: 8
+gradient_accumulation_steps: 2
+learning_rate: 0.0003
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 20
+max_steps: 200
+eval_steps: 20
+save_steps: 50
+log_steps: 10
+
+# Data Parameters
+seed: 42
+data_path: data/household/cooking_v2.txt
+
+# Checkpointing
+checkpoint_dir: checkpoints/cooking_v2_test
+resume_from: null
+
+# Device (auto, cpu, cuda)
+device: auto
