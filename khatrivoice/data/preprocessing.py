@@ -300,14 +300,21 @@ def parse_conversation_file(
     filepath: str | Path,
     skip_malformed: bool = True,
     remove_duplicates: bool = False,
+    format: str = "auto",
 ) -> List[Dict[str, str]]:
     """
     Parse a file containing User/AI conversation pairs.
+
+    Supports multiple formats:
+    - "inline": User: <text> AI: <text> on same line
+    - "multiline": User/AI on separate lines (your format)
+    - "auto": Auto-detect format
 
     Args:
         filepath: Path to the conversation file
         skip_malformed: Whether to skip lines that can't be parsed
         remove_duplicates: Whether to remove duplicate conversations
+        format: File format ("inline", "multiline", "auto")
 
     Returns:
         List of dictionaries with 'user' and 'assistant' keys
@@ -317,26 +324,112 @@ def parse_conversation_file(
     with open(filepath, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
+    # Auto-detect format if needed
+    if format == "auto":
+        # Check if any line has both User: and AI: on same line
+        has_inline = any("User:" in line and "AI:" in line for line in lines[:100])
+        format = "inline" if has_inline else "multiline"
+
     conversations = []
     seen = set()
 
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        parsed = parse_conversation_line(line)
-        if parsed:
-            # Check for duplicates
-            key = (parsed["user"], parsed["assistant"])
-            if remove_duplicates and key in seen:
+    if format == "multiline":
+        # Parse multiline format (User on one line, AI on next)
+        conversations = _parse_multiline_conversations(lines, skip_malformed)
+    else:
+        # Parse inline format
+        for line in lines:
+            line = line.strip()
+            if not line:
                 continue
-            if remove_duplicates:
-                seen.add(key)
 
-            conversations.append(parsed)
-        elif not skip_malformed:
-            raise ValueError(f"Could not parse line: {line}")
+            parsed = parse_conversation_line(line)
+            if parsed:
+                conversations.append(parsed)
+            elif not skip_malformed:
+                raise ValueError(f"Could not parse line: {line}")
+
+    # Remove duplicates if requested
+    if remove_duplicates:
+        unique_conversations = []
+        for conv in conversations:
+            key = (conv["user"], conv["assistant"])
+            if key not in seen:
+                seen.add(key)
+                unique_conversations.append(conv)
+        conversations = unique_conversations
+
+    return conversations
+
+
+def _parse_multiline_conversations(
+    lines: List[str],
+    skip_malformed: bool = True,
+) -> List[Dict[str, str]]:
+    """
+    Parse conversations where User and AI are on separate lines.
+
+    Format:
+        User: What is Python?
+        AI: Python is a programming language.
+        User: What is Java?
+        AI: Java is another programming language.
+
+    Args:
+        lines: List of lines from file
+        skip_malformed: Whether to skip malformed pairs
+
+    Returns:
+        List of conversation dictionaries
+    """
+    import re
+    conversations = []
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        # Check for User: line
+        if re.match(r"(?i)^(User|Human):\s*(.+)$", line):
+            user_match = re.match(r"(?i)^(User|Human):\s*(.+)$", line)
+            user_text = user_match.group(2).strip()
+
+            # Look for AI: response on next line(s)
+            i += 1
+            assistant_lines = []
+
+            while i < len(lines):
+                next_line = lines[i].strip()
+
+                # Check if it's a new User: line
+                if re.match(r"(?i)^(User|Human):", next_line):
+                    break
+
+                # Check if it's an AI: line
+                ai_match = re.match(r"(?i)^(AI|Assistant):\s*(.+)$", next_line)
+                if ai_match:
+                    assistant_lines.append(ai_match.group(2).strip())
+                    i += 1
+                    # Continue collecting multi-line responses
+                    while i < len(lines):
+                        cont_line = lines[i].strip()
+                        # Stop at next User: or AI: marker
+                        if re.match(r"(?i)^(User|Human|AI|Assistant):", cont_line):
+                            break
+                        if cont_line:  # Non-empty line
+                            assistant_lines.append(cont_line)
+                        i += 1
+
+            if user_text and assistant_lines:
+                assistant_text = " ".join(assistant_lines)
+                conversations.append({
+                    "user": user_text,
+                    "assistant": assistant_text,
+                })
+            elif not skip_malformed:
+                raise ValueError(f"Malformed conversation at line with: {user_text[:50]}")
+        else:
+            i += 1
 
     return conversations
 

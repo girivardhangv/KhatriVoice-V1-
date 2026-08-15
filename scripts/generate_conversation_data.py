@@ -125,8 +125,29 @@ def format_conversation_with_tokens(user_text: str, assistant_text: str) -> str:
     return f"{USER_TOKEN}\n{user_text}\n{ASSISTANT_TOKEN}\n{assistant_text}\n{END_TOKEN}"
 
 
-def generate_conversations(count: int, seed: int = 42) -> list:
-    """Generate a list of formatted conversations."""
+def format_conversation_multiline(user_text: str, assistant_text: str) -> str:
+    """
+    Format conversation in multiline format for easier reading.
+
+    Output format:
+        User: What is Python?
+        AI: Python is a programming language.
+    """
+    return f"User: {user_text}\nAI: {assistant_text}"
+
+
+def generate_conversations(count: int, seed: int = 42, output_format: str = "tokens") -> list:
+    """
+    Generate a list of formatted conversations.
+
+    Args:
+        count: Number of conversations to generate
+        seed: Random seed
+        output_format: 'tokens' (special tokens), 'multiline' (User:/AI:), or 'both'
+
+    Returns:
+        List of formatted conversation strings
+    """
     random.seed(seed)
 
     # Start with base conversations
@@ -138,8 +159,15 @@ def generate_conversations(count: int, seed: int = 42) -> list:
         # Pick random conversation
         user_msg, assistant_msg = random.choice(all_convs)
 
-        # Format with special tokens
-        formatted = format_conversation_with_tokens(user_msg, assistant_msg)
+        # Format based on output format
+        if output_format == "multiline":
+            formatted = format_conversation_multiline(user_msg, assistant_msg)
+        elif output_format == "both":
+            # Use multiline format but with special tokens inline
+            formatted = f"User: {user_msg}\nAI: {assistant_msg}\n<|end|>"
+        else:  # tokens
+            formatted = format_conversation_with_tokens(user_msg, assistant_msg)
+
         conversations.append(formatted)
 
     # Shuffle
@@ -158,11 +186,14 @@ def main():
                         help="Random seed")
     parser.add_argument("--preview", action="store_true",
                         help="Preview first 5 conversations without saving")
+    parser.add_argument("--format", type=str, default="tokens",
+                        choices=["tokens", "multiline", "both"],
+                        help="Output format: 'tokens' (with special tokens), 'multiline' (User:/AI:), or 'both'")
 
     args = parser.parse_args()
 
     print(f"Generating {args.count} conversations...")
-    conversations = generate_conversations(args.count, seed=args.seed)
+    conversations = generate_conversations(args.count, seed=args.seed, output_format=args.format)
 
     if args.preview:
         print("\n=== Preview (first 5 conversations) ===\n")

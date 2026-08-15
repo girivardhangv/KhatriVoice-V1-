@@ -56,9 +56,10 @@ def test_conversation_parsing():
     from khatrivoice.data.preprocessing import (
         parse_conversation_line,
         format_conversation,
+        parse_conversation_file,
     )
 
-    # Test parsing
+    # Test inline parsing
     line = "User: What is Python? AI: Python is a programming language."
     parsed = parse_conversation_line(line)
 
@@ -66,7 +67,32 @@ def test_conversation_parsing():
     assert parsed["user"] == "What is Python?", f"User text mismatch: {parsed['user']}"
     assert parsed["assistant"] == "Python is a programming language.", f"Assistant text mismatch"
 
-    print(f"  ✓ Conversation parsing works")
+    print(f"  ✓ Inline conversation parsing works")
+
+    # Test multiline parsing (your format)
+    multiline_text = """User: What is JavaScript?
+AI: JavaScript is a programming language.
+User: What is overfitting?
+AI: Overfitting happens when a model learns too closely."""
+
+    import tempfile
+    import os
+
+    # Write to temporary file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        f.write(multiline_text)
+        temp_path = f.name
+
+    try:
+        conversations = parse_conversation_file(temp_path, format="multiline")
+        print(f"  ✓ Multiline parsing: found {len(conversations)} conversations")
+
+        if len(conversations) >= 2:
+            assert conversations[0]["user"] == "What is JavaScript?"
+            assert conversations[1]["user"] == "What is overfitting?"
+            print(f"  ✓ Correctly parsed user prompts from multiline format")
+    finally:
+        os.unlink(temp_path)
 
     # Test formatting
     formatted = format_conversation("Hello", "Hi there!")
