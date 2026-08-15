@@ -1,0 +1,31 @@
+# KhatriVoice v1 - OASST2 Configuration
+vocab_size: 8000
+hidden_size: 256
+num_layers: 6
+num_attention_heads: 8
+num_kv_heads: 4
+intermediate_size: 1024
+max_sequence_length: 512
+rope_theta: 10000.0
+dropout: 0.1
+
+batch_size: 4
+gradient_accumulation_steps: 4
+learning_rate: 0.0003
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 100
+max_steps: 5000
+eval_steps: 500
+save_steps: 1000
+log_steps: 50
+
+seed: 42
+data_path: data/processed/oasst2_train.txt
+tokenizer_path: data/processed/tokenizer_oasst2
+
+checkpoint_dir: checkpoints_oasst2
+resume_from: null
+device: auto
