@@ -30,8 +30,8 @@ class ConversationDataset(torch.utils.data.Dataset):
     """
 
     # Token markers (must match vocabulary.py)
-    USER_MARKER = ""
-    ASSISTANT_MARKER = ""
+    USER_MARKER = "<user>"
+    ASSISTANT_MARKER = "<|assistant>"
     END_MARKER = "<|end|>"
 
     def __init__(

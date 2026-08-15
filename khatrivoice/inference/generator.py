@@ -515,8 +515,8 @@ def generate_chat_response(
         Assistant's response text (stripped of special tokens)
     """
     # Format with conversation tokens
-    USER_TOKEN = ""
-    ASSISTANT_TOKEN = ""
+    USER_TOKEN = "<user>"
+    ASSISTANT_TOKEN = "<|assistant>"
 
     prompt = f"{USER_TOKEN}\n{user_message}\n{ASSISTANT_TOKEN}\n"
 

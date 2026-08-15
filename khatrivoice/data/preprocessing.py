@@ -11,9 +11,9 @@ from pathlib import Path
 
 
 # Special tokens for conversation formatting
-# These contain invisible Unicode markers and must match vocabulary.py exactly
-USER_TOKEN = ""  # Contains special Unicode LTR markers
-ASSISTANT_TOKEN = ""  # Contains special Unicode LTR markers
+# MUST match vocabulary.py exactly
+USER_TOKEN = "<user>"
+ASSISTANT_TOKEN = "<|assistant>"
 END_TOKEN = "<|end|>"
 
 

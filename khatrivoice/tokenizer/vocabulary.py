@@ -38,9 +38,9 @@ class Vocabulary:
     eos_token: str = "</s>"
     pad_token: str = "<pad>"
     unk_token: str = "<unk>"
-    # Conversational special tokens
-    user_token: str = "<|user|>"
-    assistant_token: str = "<|assistant|>"
+    # Conversational special tokens - MUST match training data format
+    user_token: str = "<user>"
+    assistant_token: str = "<|assistant>"
     end_token: str = "<|end|>"
 
     def __post_init__(self) -> None:
@@ -69,117 +69,66 @@ class Vocabulary:
                 self._add_token(token)
 
     def _add_token(self, token: str) -> int:
-        """
-        Add a token to the vocabulary.
-
-        Args:
-            token: Token string to add
-
-        Returns:
-            Token ID
-        """
+        """Add a token to the vocabulary and return its ID."""
         if token not in self.token_to_id:
             token_id = len(self.token_to_id)
             self.token_to_id[token] = token_id
             self.id_to_token[token_id] = token
         return self.token_to_id[token]
 
-    def add_tokens(self, tokens: List[str]) -> None:
-        """
-        Add multiple tokens to the vocabulary.
+    def __len__(self) -> int:
+        """Return vocabulary size."""
+        return len(self.token_to_id)
 
-        Args:
-            tokens: List of token strings to add
-        """
-        for token in tokens:
-            self._add_token(token)
+    def __contains__(self, token: str) -> bool:
+        """Check if token is in vocabulary."""
+        return token in self.token_to_id
 
     def get_id(self, token: str) -> int:
-        """
-        Get the ID for a token.
-
-        Args:
-            token: Token string
-
-        Returns:
-            Token ID (returns UNK ID if token not found)
-        """
-        if token in self.token_to_id:
-            return self.token_to_id[token]
-        return self.token_to_id[self.unk_token]
+        """Get ID for a token, returning UNK ID if not found."""
+        return self.token_to_id.get(token, self.token_to_id.get(self.unk_token, 0))
 
     def get_token(self, token_id: int) -> str:
-        """
-        Get the token for an ID.
-
-        Args:
-            token_id: Token ID
-
-        Returns:
-            Token string (returns UNK token if ID not found)
-        """
-        if token_id in self.id_to_token:
-            return self.id_to_token[token_id]
-        return self.unk_token
-
-    @property
-    def bos_id(self) -> int:
-        """Get the ID for the BOS token."""
-        return self.token_to_id[self.bos_token]
-
-    @property
-    def eos_id(self) -> int:
-        """Get the ID for the EOS token."""
-        return self.token_to_id[self.eos_token]
+        """Get token for an ID, returning UNK token if not found."""
+        return self.id_to_token.get(token_id, self.unk_token)
 
     @property
     def pad_id(self) -> int:
-        """Get the ID for the PAD token."""
-        return self.token_to_id[self.pad_token]
+        """Get padding token ID."""
+        return self.get_id(self.pad_token)
 
     @property
     def unk_id(self) -> int:
-        """Get the ID for the UNK token."""
-        return self.token_to_id[self.unk_token]
+        """Get unknown token ID."""
+        return self.get_id(self.unk_token)
+
+    @property
+    def bos_id(self) -> int:
+        """Get beginning-of-sequence token ID."""
+        return self.get_id(self.bos_token)
+
+    @property
+    def eos_id(self) -> int:
+        """Get end-of-sequence token ID."""
+        return self.get_id(self.eos_token)
 
     @property
     def user_id(self) -> int:
-        """Get the ID for the USER token."""
-        return self.token_to_id[self.user_token]
+        """Get user token ID."""
+        return self.get_id(self.user_token)
 
     @property
     def assistant_id(self) -> int:
-        """Get the ID for the ASSISTANT token."""
-        return self.token_to_id[self.assistant_token]
+        """Get assistant token ID."""
+        return self.get_id(self.assistant_token)
 
     @property
     def end_id(self) -> int:
-        """Get the ID for the END token."""
-        return self.token_to_id[self.end_token]
+        """Get end token ID."""
+        return self.get_id(self.end_token)
 
-    @property
-    def vocab_size(self) -> int:
-        """Get the vocabulary size."""
-        return len(self.token_to_id)
-
-    def __len__(self) -> int:
-        """Return vocabulary size."""
-        return self.vocab_size
-
-    def __contains__(self, token: str) -> bool:
-        """Check if a token is in the vocabulary."""
-        return token in self.token_to_id
-
-    def save(self, path: str | Path) -> None:
-        """
-        Save vocabulary to a JSON file.
-
-        Args:
-            path: Path to save the vocabulary
-        """
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
+    def save(self, path: Path) -> None:
+        """Save vocabulary to JSON file."""
         data = {
             "token_to_id": self.token_to_id,
             "special_tokens": list(self.special_tokens),
@@ -191,50 +140,27 @@ class Vocabulary:
             "assistant_token": self.assistant_token,
             "end_token": self.end_token,
         }
-
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     @classmethod
-    def load(cls, path: str | Path) -> "Vocabulary":
-        """
-        Load vocabulary from a JSON file.
-
-        Args:
-            path: Path to load the vocabulary from
-
-        Returns:
-            Vocabulary instance
-        """
-        path = Path(path)
+    def load(cls, path: Path) -> "Vocabulary":
+        """Load vocabulary from JSON file."""
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        vocab = cls(
-            token_to_id=data["token_to_id"],
-            special_tokens=set(data["special_tokens"]),
-            bos_token=data["bos_token"],
-            eos_token=data["eos_token"],
-            pad_token=data["pad_token"],
-            unk_token=data["unk_token"],
-            user_token=data.get("user_token", ""),
-            assistant_token=data.get("assistant_token", ""),
-            end_token=data.get("end_token", "<|end|>"),
-        )
+        vocab = cls(token_to_id=data["token_to_id"])
+        vocab.special_tokens = set(data.get("special_tokens", []))
+        vocab.bos_token = data.get("bos_token", "<s>")
+        vocab.eos_token = data.get("eos_token", "</s>")
+        vocab.pad_token = data.get("pad_token", "<pad>")
+        vocab.unk_token = data.get("unk_token", "<unk>")
+        vocab.user_token = data.get("user_token", "<user>")
+        vocab.assistant_token = data.get("assistant_token", "<|assistant>")
+        vocab.end_token = data.get("end_token", "<|end|>")
+
         return vocab
-
-    def get_special_tokens_mask(self, token_ids: List[int]) -> List[bool]:
-        """
-        Get a mask indicating which tokens are special tokens.
-
-        Args:
-            token_ids: List of token IDs
-
-        Returns:
-            List of booleans (True for special tokens)
-        """
-        return [self.id_to_token.get(tid, "") in self.special_tokens for tid in token_ids]
 
     def __repr__(self) -> str:
         """Return string representation."""
-        return f"Vocabulary(size={self.vocab_size}, special_tokens={len(self.special_tokens)})"
+        return f"Vocabulary(size={len(self)}, special_tokens={len(self.special_tokens)})"

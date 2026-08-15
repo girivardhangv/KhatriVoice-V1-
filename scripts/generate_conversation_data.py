@@ -118,8 +118,8 @@ def generate_conversation_variations(base_convs: list, num_variations: int = 3) 
 def format_conversation_with_tokens(user_text: str, assistant_text: str) -> str:
     """Format conversation with special tokens."""
     # These must match vocabulary.py exactly
-    USER_TOKEN = ""
-    ASSISTANT_TOKEN = ""
+    USER_TOKEN = "<user>"
+    ASSISTANT_TOKEN = "<|assistant>"
     END_TOKEN = "<|end|>"
 
     return f"{USER_TOKEN}\n{user_text}\n{ASSISTANT_TOKEN}\n{assistant_text}\n{END_TOKEN}"

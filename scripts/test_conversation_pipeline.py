@@ -32,8 +32,8 @@ def test_special_tokens():
     assert vocab.eos_token == "</s>", f"EOS token mismatch"
 
     # Check conversational tokens
-    assert vocab.user_token == "", f"USER token mismatch"
-    assert vocab.assistant_token == "", f"ASSISTANT token mismatch"
+    assert vocab.user_token == "<user>", f"USER token mismatch"
+    assert vocab.assistant_token == "<|assistant>", f"ASSISTANT token mismatch"
     assert vocab.end_token == "<|end|>", f"END token mismatch"
 
     # Check IDs
