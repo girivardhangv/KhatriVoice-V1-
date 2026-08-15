@@ -1,0 +1,40 @@
+# KhatriVoice v1 - Tiny Configuration
+# Designed for CPU testing (~100K parameters)
+# Used to verify the training pipeline works correctly
+
+# Model Architecture
+vocab_size: 1000
+hidden_size: 64
+num_layers: 2
+num_attention_heads: 4
+num_kv_heads: 4
+intermediate_size: 256
+max_sequence_length: 128
+rope_theta: 10000.0
+dropout: 0.0
+
+# Training Parameters
+batch_size: 4
+gradient_accumulation_steps: 1
+learning_rate: 0.001
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 10
+max_steps: 100
+eval_steps: 20
+save_steps: 50
+log_steps: 5
+
+# Data Parameters
+seed: 42
+data_path: data/processed
+tokenizer_path: data/processed/tokenizer
+
+# Checkpointing
+checkpoint_dir: checkpoints
+resume_from: null
+
+# Device (auto, cpu, cuda)
+device: auto

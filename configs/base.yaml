@@ -1,0 +1,39 @@
+# KhatriVoice v1 - Base Configuration
+# Designed for serious training on GPU infrastructure (~100M parameters)
+
+# Model Architecture
+vocab_size: 32000
+hidden_size: 768
+num_layers: 12
+num_attention_heads: 12
+num_kv_heads: 6
+intermediate_size: 2048
+max_sequence_length: 1024
+rope_theta: 10000.0
+dropout: 0.1
+
+# Training Parameters
+batch_size: 16
+gradient_accumulation_steps: 4
+learning_rate: 0.0003
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 1000
+max_steps: 100000
+eval_steps: 1000
+save_steps: 5000
+log_steps: 10
+
+# Data Parameters
+seed: 42
+data_path: data/processed
+tokenizer_path: data/processed/tokenizer
+
+# Checkpointing
+checkpoint_dir: checkpoints
+resume_from: null
+
+# Device (auto, cpu, cuda)
+device: auto
