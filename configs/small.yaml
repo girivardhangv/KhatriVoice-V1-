@@ -2,8 +2,6 @@
 # Designed for quick GPU training experiments (~10M parameters)
 
 # Model Architecture
-# Note: vocab_size is the maximum vocabulary size. The actual vocab size
-# will be determined by the tokenizer during training.
 vocab_size: 8000
 hidden_size: 256
 num_layers: 6
@@ -23,15 +21,15 @@ beta1: 0.9
 beta2: 0.95
 max_grad_norm: 1.0
 warmup_steps: 100
-max_steps: 10000
-eval_steps: 500
-save_steps: 1000
+max_steps: 2000
+eval_steps: 100
+save_steps: 200
 log_steps: 10
 
 # Data Parameters
 seed: 42
-# Path to training data (text file or directory with .txt files)
-data_path: data/raw/tiny.txt
+data_path: data/processed
+tokenizer_path: data/processed/tokenizer
 
 # Checkpointing
 checkpoint_dir: checkpoints
