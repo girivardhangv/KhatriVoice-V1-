@@ -2,6 +2,8 @@
 # Designed for serious training on GPU infrastructure (~100M parameters)
 
 # Model Architecture
+# Note: vocab_size is the maximum vocabulary size. The actual vocab size
+# will be determined by the tokenizer during training.
 vocab_size: 32000
 hidden_size: 768
 num_layers: 12
@@ -28,8 +30,8 @@ log_steps: 10
 
 # Data Parameters
 seed: 42
-data_path: data/processed
-tokenizer_path: data/processed/tokenizer
+# Path to training data (text file or directory with .txt files)
+data_path: data/raw/tiny.txt
 
 # Checkpointing
 checkpoint_dir: checkpoints

@@ -61,6 +61,7 @@ class CheckpointManager:
         loss: float,
         config: Any,
         extra_state: Optional[Dict] = None,
+        tokenizer_path: Optional[str] = None,
     ) -> Path:
         """
         Save a checkpoint.
@@ -74,6 +75,7 @@ class CheckpointManager:
             loss: Current loss value
             config: Model configuration
             extra_state: Additional state to save
+            tokenizer_path: Path to saved tokenizer
 
         Returns:
             Path to saved checkpoint
@@ -89,6 +91,12 @@ class CheckpointManager:
             "config": config.to_dict() if hasattr(config, "to_dict") else config,
             "timestamp": datetime.now().isoformat(),
         }
+
+        # Include tokenizer path for inference
+        if tokenizer_path:
+            checkpoint["tokenizer_path"] = tokenizer_path
+        elif hasattr(self, "tokenizer_path"):
+            checkpoint["tokenizer_path"] = self.tokenizer_path
 
         if extra_state:
             checkpoint["extra_state"] = extra_state

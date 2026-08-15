@@ -3,6 +3,8 @@
 # Used to verify the training pipeline works correctly
 
 # Model Architecture
+# Note: vocab_size is the maximum vocabulary size. The actual vocab size
+# will be determined by the tokenizer during training.
 vocab_size: 1000
 hidden_size: 64
 num_layers: 2
@@ -29,8 +31,11 @@ log_steps: 5
 
 # Data Parameters
 seed: 42
-data_path: data/processed
-tokenizer_path: data/processed/tokenizer
+# Path to training data (text file or directory with .txt files)
+# Can be a single text file or a directory containing text files
+data_path: data/raw/tiny.txt
+# Note: tokenizer_path is not used during training; tokenizer is saved
+# to checkpoint_dir/tokenizer automatically
 
 # Checkpointing
 checkpoint_dir: checkpoints

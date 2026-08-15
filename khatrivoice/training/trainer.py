@@ -324,6 +324,9 @@ class Trainer:
 
     def _save_checkpoint(self, is_best: bool = False) -> None:
         """Save a training checkpoint."""
+        # Determine tokenizer path (saved in checkpoint directory)
+        tokenizer_path = str(Path(self.checkpoint_manager.checkpoint_dir) / "tokenizer")
+
         self.checkpoint_manager.save(
             model=self.model,
             optimizer=self.optimizer,
@@ -332,6 +335,7 @@ class Trainer:
             epoch=self.epoch,
             loss=self.metrics_tracker.train_metrics.loss,
             config=self.config,
+            tokenizer_path=tokenizer_path,
         )
 
         if is_best:

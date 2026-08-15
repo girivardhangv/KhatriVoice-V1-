@@ -94,6 +94,9 @@ def test_overfit_tiny_dataset(
     tokenizer.train(tiny_texts, vocab_size=50)
     print(f"  Vocabulary size: {tokenizer.vocab_size}")
 
+    # IMPORTANT: Update config vocab_size to match tokenizer
+    config.vocab_size = tokenizer.vocab_size
+
     # Create dataset
     print("\nCreating dataset...")
     dataset = KhatriDataset(

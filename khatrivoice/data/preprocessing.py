@@ -140,8 +140,13 @@ def split_train_val_test(
     import random
 
     # Validate ratios
-    assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6, \
-        "Ratios must sum to 1"
+    total_ratio = train_ratio + val_ratio + test_ratio
+    if abs(total_ratio - 1.0) >= 1e-6:
+        # If ratios don't sum to 1, normalize them
+        if total_ratio > 0:
+            train_ratio /= total_ratio
+            val_ratio /= total_ratio
+            test_ratio /= total_ratio
 
     # Shuffle if requested
     if shuffle:
@@ -157,6 +162,10 @@ def split_train_val_test(
     train_texts = texts[:train_end]
     val_texts = texts[train_end:val_end]
     test_texts = texts[val_end:]
+
+    # Ensure we always have training data
+    if not train_texts and texts:
+        train_texts = texts[:1]
 
     return train_texts, val_texts, test_texts
 
