@@ -2,11 +2,19 @@
 """
 Generate text with KhatriVoice language model.
 
-Usage:
-    python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello"
-    python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --temperature 0.8 --top-k 50
+Supports both:
+1. Free-form text generation
+2. Conversational chat mode (formats input with special tokens)
 
-This script loads a trained KhatriVoice model and generates text.
+Usage:
+    # Free-form generation
+    python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello"
+
+    # Conversational mode
+    python scripts/generate.py --checkpoint checkpoints/best.pt --chat --prompt "What is Python?"
+
+    # Interactive chat
+    python scripts/generate.py --checkpoint checkpoints/best.pt --interactive
 """
 
 import argparse
@@ -22,8 +30,38 @@ import torch
 from khatrivoice.config.model_config import KhatriVoiceConfig
 from khatrivoice.model.khatrivoice import KhatriVoice
 from khatrivoice.tokenizer.tokenizer import KhatriTokenizer
-from khatrivoice.inference.generator import KhatriVoiceGenerator, create_generator
+from khatrivoice.inference.generator import KhatriVoiceGenerator
 from khatrivoice.utils.device import get_device
+
+
+# Token markers (must match vocabulary.py)
+USER_MARKER = ""
+ASSISTANT_MARKER = ""
+END_MARKER = "<|end|>"
+
+
+def format_chat_prompt(user_message: str) -> str:
+    """Format a user message for the model."""
+    return f"{USER_MARKER}\n{user_message}\n{ASSISTANT_MARKER}\n"
+
+
+def extract_assistant_response(text: str) -> str:
+    """Extract just the assistant's response from generated text."""
+    # Remove user section
+    if ASSISTANT_MARKER in text:
+        idx = text.find(ASSISTANT_MARKER)
+        text = text[idx + len(ASSISTANT_MARKER):].strip()
+
+    # Stop at END marker
+    if END_MARKER in text:
+        text = text[:text.find(END_MARKER)].strip()
+
+    # Remove any remaining special tokens
+    text = text.replace(USER_MARKER, "").strip()
+    text = text.replace(ASSISTANT_MARKER, "").strip()
+    text = text.replace(END_MARKER, "").strip()
+
+    return text
 
 
 def parse_args():
@@ -31,293 +69,216 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate text with KhatriVoice",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Greedy decoding (deterministic)
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello world"
+    )
 
-  # Temperature sampling
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --temperature 0.8
-
-  # Top-k sampling
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --top-k 50
-
-  # Top-p (nucleus) sampling
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --top-p 0.95
-
-  # Combined strategies
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --temperature 0.7 --top-k 50 --top-p 0.9
-
-  # Multiple sequences
-  python scripts/generate.py --checkpoint checkpoints/best.pt --prompt "hello" --num-sequences 5
-        """,
-    )
-    parser.add_argument(
-        "--checkpoint",
-        type=str,
-        required=True,
-        help="Path to model checkpoint",
-    )
-    parser.add_argument(
-        "--tokenizer",
-        type=str,
-        default=None,
-        help="Path to tokenizer directory (default: loaded from same dir as checkpoint)",
-    )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default=None,
-        help="Path to config file (default: loaded from checkpoint)",
-    )
-    parser.add_argument(
-        "--prompt",
-        type=str,
-        default="",
-        help="Input prompt for generation",
-    )
-    parser.add_argument(
-        "--prompt-file",
-        type=str,
-        default=None,
-        help="File containing the prompt (alternative to --prompt)",
-    )
-    parser.add_argument(
-        "--max-new-tokens",
-        type=int,
-        default=100,
-        help="Maximum number of new tokens to generate",
-    )
-    parser.add_argument(
-        "--temperature",
-        type=float,
-        default=1.0,
-        help="Sampling temperature (1.0 = normal, <1.0 = more deterministic)",
-    )
-    parser.add_argument(
-        "--top-k",
-        type=int,
-        default=None,
-        help="Top-k sampling (keep only top-k tokens)",
-    )
-    parser.add_argument(
-        "--top-p",
-        type=float,
-        default=None,
-        help="Top-p (nucleus) sampling",
-    )
-    parser.add_argument(
-        "--greedy",
-        action="store_true",
-        help="Use greedy decoding (ignores temperature/top-k/top-p)",
-    )
-    parser.add_argument(
-        "--num-sequences",
-        "--num-return-sequences",
-        dest="num_sequences",
-        type=int,
-        default=1,
-        help="Number of sequences to generate",
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        default="auto",
-        choices=["auto", "cpu", "cuda"],
-        help="Device to run on",
-    )
-    parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="Disable KV cache during generation (slower)",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Random seed for reproducibility",
-    )
+    parser.add_argument("--checkpoint", type=str, required=True,
+                        help="Path to model checkpoint")
+    parser.add_argument("--tokenizer", type=str, default=None,
+                        help="Path to tokenizer directory")
+    parser.add_argument("--prompt", type=str, default=None,
+                        help="Text prompt for generation")
+    parser.add_argument("--chat", action="store_true",
+                        help="Use conversational format")
+    parser.add_argument("--interactive", action="store_true",
+                        help="Start interactive chat session")
+    parser.add_argument("--max-new-tokens", type=int, default=100,
+                        help="Maximum new tokens to generate")
+    parser.add_argument("--temperature", type=float, default=0.7,
+                        help="Sampling temperature")
+    parser.add_argument("--top-k", type=int, default=None,
+                        help="Top-k sampling")
+    parser.add_argument("--top-p", type=float, default=0.9,
+                        help="Nucleus sampling threshold")
+    parser.add_argument("--repetition-penalty", type=float, default=1.1,
+                        help="Repetition penalty")
+    parser.add_argument("--num-sequences", type=int, default=1,
+                        help="Number of sequences to generate")
+    parser.add_argument("--device", type=str, default="auto",
+                        help="Device to use")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Random seed")
 
     return parser.parse_args()
 
 
-def load_model_from_checkpoint(checkpoint_path: str, device: str = "auto"):
-    """
-    Load model from checkpoint.
+def load_generator(checkpoint_path: str, tokenizer_path: str, device: str):
+    """Load model and create generator."""
+    device = get_device(device)
 
-    Args:
-        checkpoint_path: Path to checkpoint file
-        device: Device to load model on
-
-    Returns:
-        Tuple of (model, config, checkpoint)
-    """
-    checkpoint_path = Path(checkpoint_path)
-
-    if not checkpoint_path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    # Load tokenizer
+    tokenizer = KhatriTokenizer.load(tokenizer_path)
 
     # Load checkpoint
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
-    # Get config
     if "config" in checkpoint:
-        config = KhatriVoiceConfig.from_dict(checkpoint["config"])
+        config_dict = checkpoint["config"]
+        config = KhatriVoiceConfig(**config_dict)
     else:
-        raise ValueError("Checkpoint does not contain config")
+        raise ValueError("No config found in checkpoint")
 
-    # Create model
+    # Load model
     model = KhatriVoice(config)
-
-    # Load state dict
     model.load_state_dict(checkpoint["model_state_dict"])
-
-    # Move to device
-    device = get_device(device)
     model = model.to(device)
     model.eval()
 
-    return model, config, checkpoint
+    # Get stop tokens
+    stop_tokens = [tokenizer.eos_id]
+    if hasattr(tokenizer.vocab, 'end_id'):
+        stop_tokens.append(tokenizer.vocab.end_id)
+
+    generator = KhatriVoiceGenerator(model=model, tokenizer=tokenizer, device=device)
+
+    return generator, stop_tokens
 
 
-def load_tokenizer(tokenizer_path: str, checkpoint_dir: Path):
-    """
-    Load tokenizer.
-
-    Args:
-        tokenizer_path: Explicit path to tokenizer
-        checkpoint_dir: Directory where checkpoint is located
-
-    Returns:
-        KhatriTokenizer
-    """
-    # Try explicit path first
-    if tokenizer_path:
-        tokenizer_path = Path(tokenizer_path)
-        if tokenizer_path.exists():
-            return KhatriTokenizer.load(tokenizer_path)
-
-    # Try checkpoint directory
-    checkpoint_tokenizer = checkpoint_dir / "tokenizer"
-    if checkpoint_tokenizer.exists():
-        return KhatriTokenizer.load(checkpoint_tokenizer)
-
-    # Try data directory
-    data_tokenizer = Path("data/processed/tokenizer")
-    if data_tokenizer.exists():
-        return KhatriTokenizer.load(data_tokenizer)
-
-    raise FileNotFoundError(
-        f"Tokenizer not found. Please specify --tokenizer path or "
-        f"ensure tokenizer is in {checkpoint_tokenizer}"
+def generate_response(generator, prompt: str, max_new_tokens: int, temperature: float,
+                      top_k: int, top_p: float, repetition_penalty: float,
+                      stop_tokens: list) -> str:
+    """Generate a response from the model."""
+    outputs = generator.generate(
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_k=top_k,
+        top_p=top_p,
+        repetition_penalty=repetition_penalty,
+        do_sample=(temperature > 0),
+        stop_tokens=stop_tokens,
     )
+    return outputs[0] if outputs else ""
+
+
+def interactive_chat(generator, args, stop_tokens: list):
+    """Run interactive chat session."""
+    print("\n" + "=" * 60)
+    print("KhatriVoice Interactive Chat")
+    print("=" * 60)
+    print("Type 'quit' or 'exit' to end.")
+    print("Type 'clear' to start new conversation.\n")
+
+    conversation_history = []
+
+    while True:
+        try:
+            user_input = input("User: ").strip()
+
+            if not user_input:
+                continue
+
+            if user_input.lower() in ['quit', 'exit']:
+                print("\nGoodbye!")
+                break
+
+            if user_input.lower() == 'clear':
+                conversation_history = []
+                print("\nConversation cleared.\n")
+                continue
+
+            # Build prompt with history
+            full_prompt = "\n".join(conversation_history) + "\n" if conversation_history else ""
+            full_prompt += format_chat_prompt(user_input)
+
+            print("Assistant: ", end="", flush=True)
+
+            response = generate_response(
+                generator=generator,
+                prompt=full_prompt,
+                max_new_tokens=args.max_new_tokens,
+                temperature=args.temperature,
+                top_k=args.top_k,
+                top_p=args.top_p,
+                repetition_penalty=args.repetition_penalty,
+                stop_tokens=stop_tokens,
+            )
+
+            clean_response = extract_assistant_response(response)
+            print(clean_response)
+
+            # Update history
+            conversation_history.append(f"User: {user_input}")
+            conversation_history.append(f"Assistant: {clean_response}")
+
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+            break
+        except EOFError:
+            print("\n\nGoodbye!")
+            break
 
 
 def main():
-    """Main generation function."""
     args = parse_args()
 
-    # Set seed if provided
+    # Random seed
     if args.seed is not None:
         import random
         import numpy as np
         random.seed(args.seed)
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(args.seed)
 
-    # Get prompt
-    prompt = args.prompt
-    if args.prompt_file:
-        with open(args.prompt_file, "r", encoding="utf-8") as f:
-            prompt = f.read().strip()
-    if not prompt:
-        print("Error: Please provide a prompt via --prompt or --prompt-file")
-        sys.exit(1)
-
-    print("=" * 60)
-    print("KhatriVoice Generation")
-    print("=" * 60)
-    print()
-
-    # Load model
-    print("Loading model...")
+    # Determine paths
     checkpoint_path = Path(args.checkpoint)
-    model, config, checkpoint = load_model_from_checkpoint(
-        args.checkpoint,
+    if args.tokenizer:
+        tokenizer_path = Path(args.tokenizer)
+    else:
+        tokenizer_path = checkpoint_path.parent / "tokenizer"
+        if not tokenizer_path.exists():
+            tokenizer_path = checkpoint_path.parent
+
+    print(f"Loading model from: {checkpoint_path}")
+    print(f"Loading tokenizer from: {tokenizer_path}")
+
+    # Load generator
+    generator, stop_tokens = load_generator(
+        checkpoint_path=str(checkpoint_path),
+        tokenizer_path=str(tokenizer_path),
         device=args.device,
     )
 
-    print(f"  Checkpoint: {args.checkpoint}")
-    print(f"  Config: hidden_size={config.hidden_size}, layers={config.num_layers}")
+    print(f"Device: {generator.device}")
+    print(f"Vocabulary size: {generator.tokenizer.vocab_size}")
 
-    # Load tokenizer
-    print("\nLoading tokenizer...")
-    try:
-        tokenizer = load_tokenizer(args.tokenizer, checkpoint_path.parent)
-        print(f"  Vocabulary size: {tokenizer.vocab_size}")
-    except FileNotFoundError:
-        print("\nWarning: Tokenizer not found. Creating a new one from the prompt.")
-        # Create a minimal tokenizer for testing
-        tokenizer = KhatriTokenizer(lowercase=True)
-        tokenizer.train([prompt], vocab_size=config.vocab_size)
-        print(f"  Created tokenizer with vocab size: {tokenizer.vocab_size}")
+    # Interactive mode
+    if args.interactive:
+        interactive_chat(generator, args, stop_tokens)
+        return
 
-    # Create generator
-    print("\nCreating generator...")
-    generator = create_generator(model=model, tokenizer=tokenizer, device=args.device)
-    print(f"  Device: {generator.device}")
+    # Single prompt mode
+    if args.prompt:
+        prompt = format_chat_prompt(args.prompt) if args.chat else args.prompt
 
-    # Generate
-    print("\n" + "=" * 60)
-    print("Generating...")
-    print("=" * 60)
-    print()
-    print(f"Prompt: \"{prompt}\"")
-    print()
-    print(f"Settings:")
-    print(f"  max_new_tokens: {args.max_new_tokens}")
-    print(f"  temperature: {args.temperature if not args.greedy else 'N/A (greedy)'}")
-    print(f"  top_k: {args.top_k}")
-    print(f"  top_p: {args.top_p}")
-    print(f"  greedy: {args.greedy}")
-    print(f"  num_sequences: {args.num_sequences}")
-    print()
+        print(f"\nPrompt: {args.prompt}")
+        print("Generating response...")
 
-    # Run generation
-    results = generator.generate(
-        prompt=prompt,
-        max_new_tokens=args.max_new_tokens,
-        temperature=args.temperature,
-        top_k=args.top_k,
-        top_p=args.top_p,
-        do_sample=not args.greedy,
-        num_return_sequences=args.num_sequences,
-    )
+        for i in range(args.num_sequences):
+            response = generate_response(
+                generator=generator,
+                prompt=prompt,
+                max_new_tokens=args.max_new_tokens,
+                temperature=args.temperature,
+                top_k=args.top_k,
+                top_p=args.top_p,
+                repetition_penalty=args.repetition_penalty,
+                stop_tokens=stop_tokens,
+            )
 
-    # Display results
-    print("=" * 60)
-    print("Results")
-    print("=" * 60)
+            clean_response = extract_assistant_response(response) if args.chat else response
 
-    for i, text in enumerate(results):
-        if args.num_sequences > 1:
-            print(f"\n[{i + 1}] {text}")
-        else:
-            print(text)
+            if args.num_sequences > 1:
+                print(f"\n--- Response {i+1} ---")
+            else:
+                print()
 
-    # Compute perplexity if available
-    if len(results) > 0:
-        print()
-        print("-" * 60)
-        try:
-            ppl = generator.compute_perplexity(prompt + results[0])
-            print(f"Perplexity of prompt+generation: {ppl:.2f}")
-        except Exception:
-            pass  # Skip if computation fails
+            print(f"Assistant: {clean_response}")
 
-    print()
+    else:
+        print("\nNo prompt. Use --prompt or --interactive")
+        print("\nExample usage:")
+        print("  python scripts/generate.py --checkpoint checkpoints/best.pt --chat --prompt 'Hello'")
+        print("  python scripts/generate.py --checkpoint checkpoints/best.pt --interactive")
 
 
 if __name__ == "__main__":

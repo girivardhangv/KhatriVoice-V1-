@@ -141,13 +141,16 @@ class RotaryPositionEmbedding(nn.Module):
         """
         batch_size, seq_len, n_heads, head_dim = q.shape
 
+        # Ensure freqs_cis is on the same device as input
+        freqs_cis = self.freqs_cis.to(q.device)
+
         # Get position-specific frequencies if position_ids provided
         if position_ids is not None:
             # Gather frequencies based on position IDs
-            freqs = self.freqs_cis[position_ids]  # [batch, seq_len, dim // 2] complex
+            freqs = freqs_cis[position_ids]  # [batch, seq_len, dim // 2] complex
         else:
             # Use default frequencies
-            freqs = self.freqs_cis[:seq_len]  # [seq_len, dim // 2] complex
+            freqs = freqs_cis[:seq_len]  # [seq_len, dim // 2] complex
 
         # Apply rotary embeddings
         q_rotated = self._apply_rotary(q, freqs)
