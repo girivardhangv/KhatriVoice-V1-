@@ -1,0 +1,5 @@
+{
+  "lowercase": true,
+  "max_token_length": 50,
+  "min_freq": 1
+}

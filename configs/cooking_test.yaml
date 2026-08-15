@@ -1,0 +1,38 @@
+# KhatriVoice v1 - Cooking Dataset Test Configuration
+# Quick test run for CPU/Codespaces (only 200 steps)
+
+# Model Architecture (same as cooking.yaml)
+vocab_size: 2000
+hidden_size: 128
+num_layers: 4
+num_attention_heads: 4
+num_kv_heads: 4
+intermediate_size: 512
+max_sequence_length: 256
+rope_theta: 10000.0
+dropout: 0.1
+
+# Training Parameters (shortened for testing)
+batch_size: 8
+gradient_accumulation_steps: 2
+learning_rate: 0.0003
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 20
+max_steps: 200
+eval_steps: 20
+save_steps: 50
+log_steps: 10
+
+# Data Parameters
+seed: 42
+data_path: data/household/cooking.txt
+
+# Checkpointing
+checkpoint_dir: checkpoints/cooking_test
+resume_from: null
+
+# Device
+device: auto

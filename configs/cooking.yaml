@@ -1,0 +1,42 @@
+# KhatriVoice v1 - Cooking Dataset Configuration
+# Household cooking text dataset (~55K lines)
+# Derived from tiny configuration for CPU/Codespaces compatibility
+
+# Model Architecture
+# Note: vocab_size is the maximum vocabulary size. The actual vocab size
+# will be determined by the tokenizer during training.
+vocab_size: 2000
+hidden_size: 128
+num_layers: 4
+num_attention_heads: 4
+num_kv_heads: 4
+intermediate_size: 512
+max_sequence_length: 256
+rope_theta: 10000.0
+dropout: 0.1
+
+# Training Parameters
+batch_size: 8
+gradient_accumulation_steps: 2
+learning_rate: 0.0003
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 100
+max_steps: 5000
+eval_steps: 200
+save_steps: 500
+log_steps: 50
+
+# Data Parameters
+seed: 42
+# Path to training data (text file or directory with .txt files)
+data_path: data/household/cooking.txt
+
+# Checkpointing - use separate directory for cooking experiments
+checkpoint_dir: checkpoints/cooking
+resume_from: null
+
+# Device (auto, cpu, cuda)
+device: auto
