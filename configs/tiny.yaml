@@ -33,7 +33,7 @@ log_steps: 5
 seed: 42
 # Path to training data (text file or directory with .txt files)
 # Can be a single text file or a directory containing text files
-data_path: data/raw/tiny.txt
+data_path: data/raw/ai_models_100k_lines.txt
 # Note: tokenizer_path is not used during training; tokenizer is saved
 # to checkpoint_dir/tokenizer automatically
 
