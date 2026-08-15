@@ -28,8 +28,7 @@ log_steps: 10
 
 # Data Parameters
 seed: 42
-data_path: data/processed
-tokenizer_path: data/processed/tokenizer
+data_path: data/processed/train.txt
 
 # Checkpointing
 checkpoint_dir: checkpoints
