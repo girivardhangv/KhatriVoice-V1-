@@ -75,7 +75,7 @@ class KhatriTokenizer:
     @property
     def vocab_size(self) -> int:
         """Get vocabulary size."""
-        return self.vocab.vocab_size
+        return len(self.vocab)
 
     @property
     def bos_id(self) -> int:
