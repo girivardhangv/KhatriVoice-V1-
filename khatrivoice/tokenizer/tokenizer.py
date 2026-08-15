@@ -130,7 +130,7 @@ class KhatriTokenizer:
             List of tokens with special tokens preserved
         """
         # Special tokens pattern - must match vocabulary.py
-        special_pattern = r'(<user>|<\|assistant\|>|<\|end\|>|<s>|</s>|<pad>|<unk>)'
+        special_pattern = r'(<user>|<\|assistant>|<\|end\|>|<s>|</s>|<pad>|<unk>)'
 
         # Split by special tokens, keeping them in the result
         parts = re.split(special_pattern, text)
