@@ -21,12 +21,14 @@ from torch.utils.data import DataLoader
 from khatrivoice.config.model_config import KhatriVoiceConfig
 from khatrivoice.model.khatrivoice import KhatriVoice
 from khatrivoice.tokenizer.tokenizer import KhatriTokenizer
-from khatrivoice.data.dataset import KhatriDataset
+from khatrivoice.data.dataset import KhatriDataset, ConversationDataset
 from khatrivoice.data.collator import DataCollator
 from khatrivoice.data.preprocessing import (
     create_tiny_dataset,
     split_train_val_test,
     load_text_file,
+    parse_conversation_file,
+    conversations_to_training_data,
 )
 from khatrivoice.training.trainer import Trainer
 from khatrivoice.utils.seed import set_seed
@@ -64,6 +66,11 @@ def parse_args():
         "--use-tiny-dataset",
         action="store_true",
         help="Use built-in tiny dataset for overfit testing (ignores data_path)",
+    )
+    parser.add_argument(
+        "--conversation-mode",
+        action="store_true",
+        help="Treat data as User/AI conversation pairs with proper label masking",
     )
     return parser.parse_args()
 
@@ -200,17 +207,34 @@ def main():
     print("Creating Datasets")
     print("=" * 60)
 
-    train_dataset = KhatriDataset(
-        tokenizer=tokenizer,
-        texts=train_texts,
-        max_length=config.max_sequence_length,
-    )
+    # Use conversation dataset if in conversation mode
+    if args.conversation_mode:
+        print("Using ConversationDataset with labeled assistant responses")
+        train_dataset = ConversationDataset(
+            tokenizer=tokenizer,
+            texts=train_texts,
+            max_length=config.max_sequence_length,
+            mask_user_tokens=True,
+        )
 
-    val_dataset = KhatriDataset(
-        tokenizer=tokenizer,
-        texts=val_texts,
-        max_length=config.max_sequence_length,
-    ) if val_texts else None
+        val_dataset = ConversationDataset(
+            tokenizer=tokenizer,
+            texts=val_texts,
+            max_length=config.max_sequence_length,
+            mask_user_tokens=True,
+        ) if val_texts else None
+    else:
+        train_dataset = KhatriDataset(
+            tokenizer=tokenizer,
+            texts=train_texts,
+            max_length=config.max_sequence_length,
+        )
+
+        val_dataset = KhatriDataset(
+            tokenizer=tokenizer,
+            texts=val_texts,
+            max_length=config.max_sequence_length,
+        ) if val_texts else None
 
     print(f"Train dataset: {len(train_dataset)} samples")
     if val_dataset:

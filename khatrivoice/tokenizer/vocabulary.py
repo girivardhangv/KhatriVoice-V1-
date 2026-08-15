@@ -38,6 +38,10 @@ class Vocabulary:
     eos_token: str = "</s>"
     pad_token: str = "<pad>"
     unk_token: str = "<unk>"
+    # Conversational special tokens
+    user_token: str = "<|user|>"
+    assistant_token: str = "<|assistant|>"
+    end_token: str = "<|end|>"
 
     def __post_init__(self) -> None:
         """Initialize the vocabulary and special tokens."""
@@ -55,6 +59,9 @@ class Vocabulary:
             self.unk_token,
             self.bos_token,
             self.eos_token,
+            self.user_token,
+            self.assistant_token,
+            self.end_token,
         ]
         for token in special_tokens:
             self.special_tokens.add(token)
@@ -136,6 +143,21 @@ class Vocabulary:
         return self.token_to_id[self.unk_token]
 
     @property
+    def user_id(self) -> int:
+        """Get the ID for the USER token."""
+        return self.token_to_id[self.user_token]
+
+    @property
+    def assistant_id(self) -> int:
+        """Get the ID for the ASSISTANT token."""
+        return self.token_to_id[self.assistant_token]
+
+    @property
+    def end_id(self) -> int:
+        """Get the ID for the END token."""
+        return self.token_to_id[self.end_token]
+
+    @property
     def vocab_size(self) -> int:
         """Get the vocabulary size."""
         return len(self.token_to_id)
@@ -165,6 +187,9 @@ class Vocabulary:
             "eos_token": self.eos_token,
             "pad_token": self.pad_token,
             "unk_token": self.unk_token,
+            "user_token": self.user_token,
+            "assistant_token": self.assistant_token,
+            "end_token": self.end_token,
         }
 
         with open(path, "w", encoding="utf-8") as f:
@@ -192,6 +217,9 @@ class Vocabulary:
             eos_token=data["eos_token"],
             pad_token=data["pad_token"],
             unk_token=data["unk_token"],
+            user_token=data.get("user_token", ""),
+            assistant_token=data.get("assistant_token", ""),
+            end_token=data.get("end_token", "<|end|>"),
         )
         return vocab
 

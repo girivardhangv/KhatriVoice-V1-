@@ -69,6 +69,8 @@ class KhatriVoiceGenerator:
         num_return_sequences: int = 1,
         eos_token_id: Optional[int] = None,
         pad_token_id: Optional[int] = None,
+        repetition_penalty: float = 1.0,
+        stop_tokens: Optional[List[int]] = None,
     ) -> List[str]:
         """
         Generate text from a prompt.
@@ -83,6 +85,8 @@ class KhatriVoiceGenerator:
             num_return_sequences: Number of sequences to generate
             eos_token_id: End-of-sequence token ID (default: tokenizer.eos_id)
             pad_token_id: Padding token ID (default: tokenizer.pad_id)
+            repetition_penalty: Penalty for repeated tokens (1.0 = no penalty, >1.0 = less repetition)
+            stop_tokens: Additional token IDs to stop generation
 
         Returns:
             List of generated text strings
@@ -92,6 +96,18 @@ class KhatriVoiceGenerator:
             eos_token_id = self.tokenizer.eos_id
         if pad_token_id is None:
             pad_token_id = self.tokenizer.pad_id
+
+        # Set up stop tokens (include EOS and conversation end token)
+        if stop_tokens is None:
+            stop_tokens = []
+        if hasattr(self.tokenizer.vocab, 'end_id'):
+            end_id = self.tokenizer.vocab.end_id
+            if end_id not in stop_tokens:
+                stop_tokens = stop_tokens + [eos_token_id, end_id]
+            else:
+                stop_tokens = stop_tokens + [eos_token_id]
+        else:
+            stop_tokens = stop_tokens + [eos_token_id]
 
         # Encode prompt
         input_ids = self.tokenizer.encode(prompt, add_bos=True, add_eos=False)
@@ -111,6 +127,8 @@ class KhatriVoiceGenerator:
             do_sample=do_sample,
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,
+            repetition_penalty=repetition_penalty,
+            stop_tokens=stop_tokens,
         )
 
         # Decode
@@ -132,6 +150,8 @@ class KhatriVoiceGenerator:
         do_sample: bool = True,
         eos_token_id: Optional[int] = None,
         pad_token_id: Optional[int] = None,
+        repetition_penalty: float = 1.0,
+        stop_tokens: Optional[List[int]] = None,
     ) -> Tensor:
         """
         Generate from token IDs directly.
@@ -145,6 +165,8 @@ class KhatriVoiceGenerator:
             do_sample: If False, use greedy decoding
             eos_token_id: End-of-sequence token ID
             pad_token_id: Padding token ID
+            repetition_penalty: Penalty for repeated tokens (1.0 = no penalty)
+            stop_tokens: Additional token IDs to stop generation
 
         Returns:
             Generated token IDs [batch_size, seq_len + max_new_tokens]
@@ -164,6 +186,8 @@ class KhatriVoiceGenerator:
             do_sample=do_sample,
             eos_token_id=eos_token_id,
             pad_token_id=pad_token_id,
+            repetition_penalty=repetition_penalty,
+            stop_tokens=stop_tokens,
         )
 
     def _generate_loop(
@@ -176,6 +200,8 @@ class KhatriVoiceGenerator:
         do_sample: bool,
         eos_token_id: int,
         pad_token_id: int,
+        repetition_penalty: float = 1.0,
+        stop_tokens: Optional[List[int]] = None,
     ) -> Tensor:
         """
         Main generation loop.
@@ -190,6 +216,12 @@ class KhatriVoiceGenerator:
 
         # Initialize KV cache
         past_key_values = None
+
+        # Stop tokens for early stopping
+        if stop_tokens is None:
+            stop_tokens = [eos_token_id]
+        elif eos_token_id not in stop_tokens:
+            stop_tokens = stop_tokens + [eos_token_id]
 
         # Generation loop
         for step in range(max_new_tokens):
@@ -212,6 +244,11 @@ class KhatriVoiceGenerator:
 
             # Get logits for last position
             next_token_logits = logits[:, -1, :]
+
+            # Apply repetition penalty
+            if repetition_penalty > 1.0:
+                for token_id in input_ids[0].tolist():
+                    next_token_logits[0, token_id] /= repetition_penalty
 
             # Apply temperature
             if temperature > 0:
@@ -240,8 +277,8 @@ class KhatriVoiceGenerator:
                 probs = F.softmax(next_token_logits, dim=-1)
                 next_tokens = torch.multinomial(probs, num_samples=1).squeeze(-1)
 
-            # Handle EOS
-            if eos_token_id is not None:
+            # Handle stop tokens (EOS and end of turn)
+            if stop_tokens:
                 # If finished, replace with pad token
                 next_tokens = torch.where(
                     unfinished_sequences,
@@ -249,8 +286,9 @@ class KhatriVoiceGenerator:
                     pad_token_id,
                 )
 
-                # Mark sequences as finished
-                unfinished_sequences = unfinished_sequences & (next_tokens != eos_token_id)
+                # Check if any stop token was generated
+                for stop_id in stop_tokens:
+                    unfinished_sequences = unfinished_sequences & (next_tokens != stop_id)
 
             # Append next token
             input_ids = torch.cat([input_ids, next_tokens.unsqueeze(-1)], dim=-1)
@@ -450,3 +488,55 @@ def load_generator_from_checkpoint(
 
     # Create generator
     return create_generator(model=model, tokenizer=tokenizer, device=device)
+
+
+def generate_chat_response(
+    generator: KhatriVoiceGenerator,
+    user_message: str,
+    max_new_tokens: int = 128,
+    temperature: float = 0.7,
+    top_p: float = 0.9,
+    repetition_penalty: float = 1.1,
+) -> str:
+    """
+    Generate a chat response to a user message.
+
+    This formats the input with proper conversation tokens and generates a response.
+
+    Args:
+        generator: KhatriVoiceGenerator instance
+        user_message: User's message
+        max_new_tokens: Maximum tokens to generate
+        temperature: Sampling temperature (lower = more focused)
+        top_p: Nucleus sampling threshold
+        repetition_penalty: Penalty for repeated tokens
+
+    Returns:
+        Assistant's response text (stripped of special tokens)
+    """
+    # Format with conversation tokens
+    USER_TOKEN = ""
+    ASSISTANT_TOKEN = ""
+
+    prompt = f"{USER_TOKEN}\n{user_message}\n{ASSISTANT_TOKEN}\n"
+
+    # Generate response
+    responses = generator.generate(
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        repetition_penalty=repetition_penalty,
+        do_sample=True,
+    )
+
+    if responses:
+        # Clean up the response
+        response = responses[0]
+        # Remove any remaining special tokens
+        response = response.replace(ASSISTANT_TOKEN, "")
+        response = response.replace("<|end|>", "")
+        response = response.strip()
+        return response
+
+    return ""

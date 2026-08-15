@@ -352,3 +352,161 @@ def create_tiny_dataset_for_testing(
         texts=tiny_texts,
         max_length=max_length,
     )
+
+
+class ConversationDataset(Dataset):
+    """
+    Dataset for conversation-style training data.
+    
+    This dataset handles conversation data formatted with special tokens:
+        <user>\n{user_text}\n<assistant>\n{assistant_text}\n<|end|>
+    
+    Key features:
+    - Masks user prompt tokens (labels=-100) so model only learns assistant responses
+    - Properly handles conversation boundaries
+    - Supports multi-turn conversations
+    """
+
+    def __init__(
+        self,
+        tokenizer: KhatriTokenizer,
+        texts: List[str],
+        max_length: int = 512,
+        stride: Optional[int] = None,
+        mask_user_tokens: bool = True,
+    ) -> None:
+        """
+        Initialize the conversation dataset.
+
+        Args:
+            tokenizer: KhatriTokenizer instance
+            texts: List of formatted conversation strings
+            max_length: Maximum sequence length
+            stride: Stride for sliding window (default: max_length)
+            mask_user_tokens: Whether to mask user tokens in labels
+        """
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.stride = stride if stride is not None else max_length
+        self.mask_user_tokens = mask_user_tokens
+
+        # Get special token IDs
+        self.user_id = tokenizer.vocab.user_id
+        self.assistant_id = tokenizer.vocab.assistant_id
+        self.end_id = tokenizer.vocab.end_id
+        self.pad_id = tokenizer.pad_id
+
+        # Tokenize all texts
+        self.sequences: List[List[int]] = []
+        self._tokenize_texts(texts)
+
+        # Build index for sliding windows
+        self.sample_indices: List[Tuple[int, int]] = []
+        self._build_index()
+
+    def _tokenize_texts(self, texts: List[str]) -> None:
+        """Tokenize all texts."""
+        for text in texts:
+            # Encode without BOS/EOS since we use special conversation tokens
+            ids = self.tokenizer.encode(text, add_bos=False, add_eos=False)
+            if len(ids) >= 2:
+                self.sequences.append(ids)
+
+    def _build_index(self) -> None:
+        """Build sample index with sliding windows."""
+        for seq_idx, seq in enumerate(self.sequences):
+            seq_len = len(seq)
+            start = 0
+
+            while start < seq_len:
+                end = min(start + self.max_length + 1, seq_len)
+                
+                # Need at least 2 tokens for input/target pair
+                if end - start >= 2:
+                    self.sample_indices.append((seq_idx, start, end))
+                
+                # Move to next window
+                start += self.stride
+
+        # Handle empty dataset
+        if not self.sample_indices:
+            self.sequences = [[self.pad_id] * 2]
+            self.sample_indices = [(0, 0, 2)]
+
+    def __len__(self) -> int:
+        return len(self.sample_indices)
+
+    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+        seq_idx, start, end = self.sample_indices[idx]
+        tokens = self.sequences[seq_idx][start:end]
+
+        # Create input/target pair
+        input_ids = tokens[:-1]
+        labels = tokens[1:].copy()
+
+        # Mask user tokens in labels if enabled
+        if self.mask_user_tokens:
+            labels = self._mask_user_prompts(tokens[:-1], labels)
+
+        # Pad to max_length
+        seq_len = len(input_ids)
+        if seq_len < self.max_length:
+            pad_length = self.max_length - seq_len
+            input_ids = input_ids + [self.pad_id] * pad_length
+            labels = labels + [-100] * pad_length
+
+        return {
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "labels": torch.tensor(labels, dtype=torch.long),
+            "attention_mask": torch.tensor(
+                [1] * seq_len + [0] * (self.max_length - seq_len),
+                dtype=torch.long,
+            ),
+        }
+
+    def _mask_user_prompts(self, input_ids: List[int], labels: List[int]) -> List[int]:
+        """
+        Mask user prompt tokens in labels.
+        
+        Only assistant response tokens should have loss computed.
+        """
+        labels = labels.copy()
+        in_user_section = False
+        in_assistant_section = False
+
+        for i, token_id in enumerate(input_ids):
+            if token_id == self.user_id:
+                # Start of user section
+                in_user_section = True
+                in_assistant_section = False
+                labels[i] = -100  # Mask the user token itself
+            elif token_id == self.assistant_id:
+                # Start of assistant section
+                in_user_section = False
+                in_assistant_section = True
+                labels[i] = -100  # Mask the assistant token itself
+            elif token_id == self.end_id:
+                # End of turn
+                in_user_section = False
+                in_assistant_section = False
+                labels[i] = -100  # Mask the end token
+            elif in_user_section:
+                # User content - mask it
+                labels[i] = -100
+            # Assistant content - keep labels (don't mask)
+            # This is the part we want the model to learn
+
+        return labels
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get dataset statistics."""
+        total_tokens = sum(len(seq) for seq in self.sequences)
+        avg_length = total_tokens / len(self.sequences) if self.sequences else 0
+        
+        return {
+            "num_sequences": len(self.sequences),
+            "num_samples": len(self.sample_indices),
+            "total_tokens": total_tokens,
+            "avg_sequence_length": avg_length,
+            "max_length": self.max_length,
+        }

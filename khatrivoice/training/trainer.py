@@ -11,7 +11,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from tqdm import tqdm
 
 from khatrivoice.config.model_config import KhatriVoiceConfig
@@ -91,8 +91,8 @@ class Trainer:
             num_training_steps=config.max_steps,
         )
 
-        # Gradient scaling for mixed precision
-        self.scaler = GradScaler(enabled=(self.device.type == "cuda"))
+        # Gradient scaling for mixed precision (device-agnostic API)
+        self.scaler = GradScaler(self.device.type, enabled=(self.device.type == "cuda"))
 
         # Checkpointing
         self.checkpoint_manager = CheckpointManager(
@@ -174,8 +174,8 @@ class Trainer:
                 if attention_mask is not None:
                     attention_mask = attention_mask.to(self.device)
 
-                # Forward pass
-                with autocast(enabled=(self.device.type == "cuda")):
+                # Forward pass with device-agnostic autocast
+                with autocast(device_type=self.device.type, enabled=(self.device.type == "cuda")):
                     outputs = self.model(
                         input_ids=input_ids,
                         labels=labels,

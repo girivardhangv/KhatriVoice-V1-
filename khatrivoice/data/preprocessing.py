@@ -6,8 +6,15 @@ and dataset creation.
 """
 
 import re
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
+
+
+# Special tokens for conversation formatting
+# These contain invisible Unicode markers and must match vocabulary.py exactly
+USER_TOKEN = ""  # Contains special Unicode LTR markers
+ASSISTANT_TOKEN = ""  # Contains special Unicode LTR markers
+END_TOKEN = "<|end|>"
 
 
 def clean_text(text: str) -> str:
@@ -236,3 +243,129 @@ def create_tiny_dataset() -> List[str]:
         "one two one two one two one two",
         "hello world hello world hello world",
     ] * 5  # Repeat to have 50 samples
+
+
+# =============================================================================
+# Conversation Parsing Utilities
+# =============================================================================
+
+def parse_conversation_line(line: str) -> Optional[Dict[str, str]]:
+    """
+    Parse a single line containing a User/AI conversation pair.
+
+    Supports formats:
+    - "User: <question> AI: <response>"
+    - "user: <question> ai: <response>" (case-insensitive)
+
+    Args:
+        line: Line to parse
+
+    Returns:
+        Dictionary with 'user' and 'assistant' keys, or None if parsing fails
+    """
+    import re
+    # Case-insensitive matching for User:/AI: markers
+    pattern = r"(?i)User:\s*(.+?)\s*(?:AI|Assistant):\s*(.+)$"
+    match = re.match(pattern, line.strip())
+
+    if match:
+        user_text = match.group(1).strip()
+        assistant_text = match.group(2).strip()
+        if user_text and assistant_text:
+            return {"user": user_text, "assistant": assistant_text}
+    return None
+
+
+def format_conversation(user_text: str, assistant_text: str) -> str:
+    """
+    Format a conversation turn with proper special tokens.
+
+    Format: <user>\n{user_text}\n<assistant>\n{assistant_text}\n<|end|>
+
+    Args:
+        user_text: User's message
+        assistant_text: Assistant's response
+
+    Returns:
+        Formatted conversation string
+    """
+    user_text = user_text.strip()
+    assistant_text = assistant_text.strip()
+
+    # Use module-level constants defined at top of file
+    return f"{USER_TOKEN}\n{user_text}\n{ASSISTANT_TOKEN}\n{assistant_text}\n{END_TOKEN}"
+
+
+def parse_conversation_file(
+    filepath: str | Path,
+    skip_malformed: bool = True,
+    remove_duplicates: bool = False,
+) -> List[Dict[str, str]]:
+    """
+    Parse a file containing User/AI conversation pairs.
+
+    Args:
+        filepath: Path to the conversation file
+        skip_malformed: Whether to skip lines that can't be parsed
+        remove_duplicates: Whether to remove duplicate conversations
+
+    Returns:
+        List of dictionaries with 'user' and 'assistant' keys
+    """
+    filepath = Path(filepath)
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    conversations = []
+    seen = set()
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        parsed = parse_conversation_line(line)
+        if parsed:
+            # Check for duplicates
+            key = (parsed["user"], parsed["assistant"])
+            if remove_duplicates and key in seen:
+                continue
+            if remove_duplicates:
+                seen.add(key)
+
+            conversations.append(parsed)
+        elif not skip_malformed:
+            raise ValueError(f"Could not parse line: {line}")
+
+    return conversations
+
+
+def conversations_to_training_data(
+    conversations: List[Dict[str, str]],
+    shuffle: bool = True,
+    seed: int = 42,
+) -> List[str]:
+    """
+    Convert parsed conversations to formatted training data.
+
+    Args:
+        conversations: List of dicts with 'user' and 'assistant' keys
+        shuffle: Whether to shuffle the data
+        seed: Random seed for shuffling
+
+    Returns:
+        List of formatted conversation strings
+    """
+    import random
+
+    formatted = []
+    for conv in conversations:
+        text = format_conversation(conv["user"], conv["assistant"])
+        formatted.append(text)
+
+    if shuffle:
+        random.seed(seed)
+        random.shuffle(formatted)
+
+    return formatted
