@@ -1,0 +1,9 @@
+{
+  "total_training_conversations": 20711,
+  "total_validation_conversations": 1090,
+  "average_conversation_words": 190.75679590555742,
+  "average_user_words": 32.19506542417073,
+  "average_assistant_words": 158.5617304813867,
+  "max_words": 400,
+  "min_words": 10
+}
