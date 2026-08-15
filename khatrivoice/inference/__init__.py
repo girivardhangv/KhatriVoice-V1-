@@ -1,5 +1,13 @@
 """Inference and generation module for KhatriVoice."""
 
-# Inference components will be imported once implemented
+from khatrivoice.inference.generator import (
+    KhatriVoiceGenerator,
+    create_generator,
+    load_generator_from_checkpoint,
+)
 
-__all__ = []
+__all__ = [
+    "KhatriVoiceGenerator",
+    "create_generator",
+    "load_generator_from_checkpoint",
+]

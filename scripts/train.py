@@ -90,8 +90,8 @@ def main():
     tokenizer.train(texts, vocab_size=config.vocab_size)
     print(f"  Vocabulary size: {tokenizer.vocab_size}")
 
-    # Split dataset
-    train_texts, val_texts, _ = split_train_val_test(texts, train_ratio=0.8, val_ratio=0.2)
+    # Split dataset (train 80%, val 10%, test 10%)
+    train_texts, val_texts, _ = split_train_val_test(texts, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1)
     print(f"  Training samples: {len(train_texts)}")
     print(f"  Validation samples: {len(val_texts)}")
 

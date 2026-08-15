@@ -188,11 +188,10 @@ class CausalSelfAttention(nn.Module):
         )
 
         # Apply additional attention mask if provided
+        # attention_mask is already shaped [batch, 1, 1, seq_len] from the model
         if attention_mask is not None:
-            # Expand mask: [batch, 1, 1, seq_len]
-            attn_mask = attention_mask[:, None, None, :]
             attn_weights = attn_weights.masked_fill(
-                ~attn_mask.bool(),
+                ~attention_mask.bool(),
                 float("-inf"),
             )
 
