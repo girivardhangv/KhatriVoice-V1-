@@ -57,7 +57,7 @@ def test_dataset_quality(config: KhatriVoiceConfig) -> dict:
     data_path = Path(config.data_path)
 
     if not data_path.exists():
-        print(f"❌ Data path not found: {data_path}")
+        print(f"x Data path not found: {data_path}")
         return {"passed": False, "reason": "data_path_not_found"}
 
     # Load data
@@ -65,7 +65,7 @@ def test_dataset_quality(config: KhatriVoiceConfig) -> dict:
         text = load_text_file(data_path, clean=False)
         lines = [line.strip() for line in text.split('\n') if line.strip()]
     else:
-        print(f"❌ Data path is not a file: {data_path}")
+        print(f"x Data path is not a file: {data_path}")
         return {"passed": False, "reason": "not_a_file"}
 
     print(f"Total lines loaded: {len(lines)}")
@@ -93,7 +93,7 @@ def test_dataset_quality(config: KhatriVoiceConfig) -> dict:
         print(f"  AI repetition: {ai_dup_pct:.1f}%")
 
         if user_dup_pct > 90:
-            print(f"⚠️  WARNING: User prompts are {user_dup_pct:.1f}% duplicates!")
+            print(f"[WARN]  WARNING: User prompts are {user_dup_pct:.1f}% duplicates!")
             print("   Consider using a more diverse dataset.")
 
     # Sample conversations
@@ -127,7 +127,7 @@ def test_tokenizer(config: KhatriVoiceConfig, sample_texts: list) -> dict:
     print(f"  Actual vocab_size: {actual_vocab_size}")
 
     if actual_vocab_size < config.vocab_size * 0.1:
-        print(f"⚠️  WARNING: Actual vocab is less than 10% of requested!")
+        print(f"[WARN]  WARNING: Actual vocab is less than 10% of requested!")
         print("   This usually means the corpus lacks diversity.")
 
     # Print special token IDs
@@ -238,10 +238,10 @@ def test_forward_pass(config: KhatriVoiceConfig, batch: dict, device: torch.devi
     print(f"    Logits shape: {logits.shape}")
 
     if torch.isnan(loss) or torch.isinf(loss):
-        print(f"❌ NaN/Inf detected in loss!")
+        print(f"x NaN/Inf detected in loss!")
         return {"passed": False, "reason": "nan_loss"}
 
-    print(f"✓ Forward pass successful")
+    print(f"v Forward pass successful")
     return {"passed": True, "loss": loss.item(), "model": model}
 
 
@@ -274,9 +274,9 @@ def test_backward_pass(model: nn.Module, batch: dict, device: torch.device) -> d
     print(f"  Gradient norm: {total_norm:.4f}")
 
     if total_norm > 1000:
-        print(f"⚠️  WARNING: Large gradient norm ({total_norm:.1f}). Consider gradient clipping.")
+        print(f"[WARN]  WARNING: Large gradient norm ({total_norm:.1f}). Consider gradient clipping.")
 
-    print(f"✓ Backward pass successful")
+    print(f"v Backward pass successful")
     return {"passed": True, "grad_norm": total_norm}
 
 
@@ -317,13 +317,13 @@ def test_generation(model: KhatriVoice, tokenizer: KhatriTokenizer, device: torc
             if len(words) > 5:
                 unique_ratio = len(set(words)) / len(words)
                 if unique_ratio < 0.3:
-                    print(f"    ⚠️ Low diversity: {unique_ratio:.2%} unique words")
+                    print(f"    [WARN] Low diversity: {unique_ratio:.2%} unique words")
 
         except Exception as e:
-            print(f"    ❌ Generation failed: {e}")
+            print(f"    x Generation failed: {e}")
             return {"passed": False, "reason": str(e)}
 
-    print(f"\n✓ Generation test complete")
+    print(f"\nv Generation test complete")
     return {"passed": True}
 
 
@@ -344,12 +344,12 @@ def test_device_consistency(model: KhatriVoice, device: torch.device) -> dict:
             issues.append(f"Buffer {name} on {buffer.device}, expected {device}")
 
     if issues:
-        print(f"❌ Device issues found:")
+        print(f"x Device issues found:")
         for issue in issues[:5]:
             print(f"  - {issue}")
         return {"passed": False, "issues": issues}
     else:
-        print(f"✓ All tensors on correct device ({device})")
+        print(f"v All tensors on correct device ({device})")
         return {"passed": True}
 
 
@@ -364,7 +364,7 @@ def main():
     print("=" * 60)
 
     # Load config
-    config = KhatriVoiceConfig.from_yaml(args.config)
+    config = KhatriVoiceConfig.load(args.config)
     if args.data:
         config.data_path = args.data
 
@@ -394,7 +394,7 @@ def main():
     # Test 1: Dataset quality
     results['dataset'] = test_dataset_quality(config)
     if not results['dataset']['passed']:
-        print("\n❌ STOPPING: Dataset test failed")
+        print("\nx STOPPING: Dataset test failed")
         return 1
 
     # Test 2-4: Tokenizer
@@ -403,7 +403,7 @@ def main():
 
     # Update config to match actual vocab size
     if config.vocab_size != tokenizer.vocab_size:
-        print(f"\n Updating config.vocab_size: {config.vocab_size} → {tokenizer.vocab_size}")
+        print(f"\n Updating config.vocab_size: {config.vocab_size} -> {tokenizer.vocab_size}")
         config.vocab_size = tokenizer.vocab_size
 
     # Test 5-6: Training batch
@@ -413,7 +413,7 @@ def main():
     # Test 7: Forward pass
     results['forward'] = test_forward_pass(config, batch, device)
     if not results['forward']['passed']:
-        print("\n❌ STOPPING: Forward pass failed")
+        print("\nx STOPPING: Forward pass failed")
         return 1
     model = results['forward']['model']
 
@@ -435,16 +435,16 @@ def main():
     print(f"\n  Tests passed: {passed}/{total}")
 
     for name, result in results.items():
-        status = "✓" if result.get('passed', False) else "❌"
+        status = "v" if result.get('passed', False) else "x"
         print(f"    {status} {name}")
 
     if passed == total:
-        print("\n✅ ALL TESTS PASSED - Ready for training!")
+        print("\n[PASS] ALL TESTS PASSED - Ready for training!")
         print("\nRecommended training command:")
         print(f"  python scripts/train.py --config {args.config} --conversation-mode")
         return 0
     else:
-        print("\n❌ SOME TESTS FAILED - Fix issues before training")
+        print("\nx SOME TESTS FAILED - Fix issues before training")
         return 1
 
 

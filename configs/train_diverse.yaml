@@ -1,0 +1,31 @@
+# KhatriVoice v1 - Diverse Configuration
+vocab_size: 8000
+hidden_size: 128
+num_layers: 4
+num_attention_heads: 4
+num_kv_heads: 2
+intermediate_size: 512
+max_sequence_length: 256
+rope_theta: 10000.0
+dropout: 0.1
+
+batch_size: 4
+gradient_accumulation_steps: 2
+learning_rate: 0.001
+weight_decay: 0.01
+beta1: 0.9
+beta2: 0.95
+max_grad_norm: 1.0
+warmup_steps: 50
+max_steps: 2500
+eval_steps: 100
+save_steps: 500
+log_steps: 10
+
+seed: 42
+data_path: data/processed/diverse_train.txt
+tokenizer_path: data/processed/tokenizer_diverse
+
+checkpoint_dir: checkpoints_diverse
+resume_from: null
+device: auto

@@ -42,7 +42,7 @@ def test_special_tokens():
     assert vocab.bos_id == 2, f"BOS ID should be 2, got {vocab.bos_id}"
     assert vocab.eos_id == 3, f"EOS ID should be 3, got {vocab.eos_id}"
 
-    print(f"  ✓ All special tokens properly defined")
+    print(f"  v All special tokens properly defined")
     print(f"  USER token: {repr(vocab.user_token)}")
     print(f"  ASSISTANT token: {repr(vocab.assistant_token)}")
     print(f"  END token: {vocab.end_token}")
@@ -67,7 +67,7 @@ def test_conversation_parsing():
     assert parsed["user"] == "What is Python?", f"User text mismatch: {parsed['user']}"
     assert parsed["assistant"] == "Python is a programming language.", f"Assistant text mismatch"
 
-    print(f"  ✓ Inline conversation parsing works")
+    print(f"  v Inline conversation parsing works")
 
     # Test multiline parsing (your format)
     multiline_text = """User: What is JavaScript?
@@ -85,12 +85,12 @@ AI: Overfitting happens when a model learns too closely."""
 
     try:
         conversations = parse_conversation_file(temp_path, format="multiline")
-        print(f"  ✓ Multiline parsing: found {len(conversations)} conversations")
+        print(f"  v Multiline parsing: found {len(conversations)} conversations")
 
         if len(conversations) >= 2:
             assert conversations[0]["user"] == "What is JavaScript?"
             assert conversations[1]["user"] == "What is overfitting?"
-            print(f"  ✓ Correctly parsed user prompts from multiline format")
+            print(f"  v Correctly parsed user prompts from multiline format")
     finally:
         os.unlink(temp_path)
 
@@ -101,7 +101,7 @@ AI: Overfitting happens when a model learns too closely."""
     assert "Hi there!" in formatted, "Assistant text not in formatted conversation"
     assert "<|end|>" in formatted, "END token not in formatted conversation"
 
-    print(f"  ✓ Conversation formatting works")
+    print(f"  v Conversation formatting works")
     print(f"  Formatted example: {repr(formatted[:100])}...")
     return True
 
@@ -132,7 +132,7 @@ def test_dataset_creation():
         mask_user_tokens=True,
     )
 
-    print(f"  ✓ ConversationDataset created")
+    print(f"  v ConversationDataset created")
     print(f"  Dataset size: {len(dataset)} samples")
 
     # Get a sample
@@ -164,7 +164,7 @@ def test_generator_params():
     assert "repetition_penalty" in params, "repetition_penalty parameter missing"
     assert "stop_tokens" in params, "stop_tokens parameter missing"
 
-    print(f"  ✓ Generator has new parameters:")
+    print(f"  v Generator has new parameters:")
     print(f"    - repetition_penalty")
     print(f"    - stop_tokens")
 
@@ -202,10 +202,10 @@ def main():
     print("=" * 60)
 
     if failed == 0:
-        print("\n✅ All tests passed!")
+        print("\n[PASS] All tests passed!")
         return 0
     else:
-        print("\n❌ Some tests failed")
+        print("\nx Some tests failed")
         return 1
 
 
