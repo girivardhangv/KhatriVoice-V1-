@@ -5,7 +5,7 @@ Trainer for KhatriVoice language model.
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from typing import Optional, Dict, Any
 from pathlib import Path
 
@@ -69,7 +69,7 @@ class Trainer:
         )
 
         # Mixed precision
-        self.scaler = GradScaler(enabled=self.device.type == "cuda")
+        self.scaler = GradScaler('cuda', enabled=self.device.type == "cuda")
 
         # Metrics
         self.metrics = MetricsTracker()
@@ -136,7 +136,7 @@ class Trainer:
         attention_mask = batch["attention_mask"].to(self.device)
 
         # Forward pass
-        with autocast(enabled=self.device.type == "cuda"):
+        with autocast('cuda', enabled=self.device.type == "cuda"):
             _, loss, _ = self.model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -175,16 +175,28 @@ class Trainer:
 
         return loss.item() * self.config.gradient_accumulation_steps
 
-    def validate(self) -> float:
-        """Run validation."""
+    def validate(self, max_batches: int = 50) -> float:
+        """
+        Run validation.
+
+        Args:
+            max_batches: Maximum number of batches to validate (limits time)
+        """
         self.model.eval()
         total_loss = 0.0
         num_batches = 0
 
-        print("\nRunning validation...")
+        print(f"\nRunning validation (max {max_batches} batches)...")
 
         with torch.no_grad():
-            for batch in self.val_dataloader:
+            for i, batch in enumerate(self.val_dataloader):
+                if i >= max_batches:
+                    break
+
+                # Show progress every 10 batches
+                if i % 10 == 0:
+                    print(f"  Validating batch {i}/{min(len(self.val_dataloader), max_batches)}...")
+
                 input_ids = batch["input_ids"].to(self.device)
                 labels = batch["labels"].to(self.device)
                 attention_mask = batch["attention_mask"].to(self.device)
@@ -199,7 +211,7 @@ class Trainer:
                 num_batches += 1
 
         avg_loss = total_loss / num_batches if num_batches > 0 else 0.0
-        print(f"  Validation loss: {avg_loss:.4f}")
+        print(f"  Validation loss: {avg_loss:.4f} ({num_batches} batches)")
 
         self.model.train()
         return avg_loss
