@@ -181,7 +181,9 @@ class CausalSelfAttention(nn.Module):
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) * scale
 
         # Apply causal mask
+        # Ensure mask is on same device as attention weights
         causal_mask = self.causal_mask[:seq_len, :kv_seq_len]
+        causal_mask = causal_mask.to(attn_weights.device)
         attn_weights = attn_weights.masked_fill(
             ~causal_mask.bool(),
             float("-inf"),

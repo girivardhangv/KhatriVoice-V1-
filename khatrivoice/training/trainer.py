@@ -171,6 +171,8 @@ class Trainer:
                 input_ids = batch["input_ids"].to(self.device)
                 labels = batch["labels"].to(self.device)
                 attention_mask = batch.get("attention_mask")
+                if attention_mask is not None:
+                    attention_mask = attention_mask.to(self.device)
 
                 # Forward pass
                 with autocast(enabled=(self.device.type == "cuda")):
@@ -285,6 +287,8 @@ class Trainer:
                 input_ids = batch["input_ids"].to(self.device)
                 labels = batch["labels"].to(self.device)
                 attention_mask = batch.get("attention_mask")
+                if attention_mask is not None:
+                    attention_mask = attention_mask.to(self.device)
 
                 outputs = self.model(
                     input_ids=input_ids,
